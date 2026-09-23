@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Penilaian PJOK Kelas 7</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        pjok: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling for smooth table navigation */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .table-sticky-header th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-emerald-800 text-white shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-emerald-600 rounded-lg shadow-inner">
+                    <i class="fa-solid me-1 fa-running text-2xl text-yellow-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">E-Penilaian PJOK SMP</h1>
+                    <p class="text-xs text-emerald-200">Kurikulum Merdeka - Kelas 7 (34 Siswa)</p>
+                </div>
+            </div>
+            
+            <!-- Quick Info / Status Bar -->
+            <div class="flex items-center space-x-3 text-xs sm:text-sm">
+                <div class="bg-emerald-900/60 px-3 py-1.5 rounded-lg border border-emerald-700/50 flex items-center space-x-2">
+                    <i class="fa-regular fa-clock text-emerald-300"></i>
+                    <span id="saveStatus" class="text-emerald-100">Tersimpan otomatis</span>
+                </div>
+                <button onclick="exportToExcel()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 py-1.5 rounded-lg transition duration-200 flex items-center space-x-2 shadow">
+                    <i class="fa-solid fa-file-excel text-base"></i>
+                    <span>Export Excel</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Application Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        <!-- Sidebar: Navigation Menu for Assessment Topics -->
+        <aside class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-slate-200 p-4 h-fit no-print">
+            <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+                <span>Pilih Materi PJOK</span>
+                <i class="fa-solid fa-list-check"></i>
+            </h2>
+            
+            <div class="space-y-4 text-sm overflow-y-auto max-h-[calc(100vh-200px)] pr-1" id="materiMenuContainer">
+                <!-- Group 1: Bola Besar -->
+                <div>
+                    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">Permainan Bola Besar</span>
+                    <div class="mt-1 space-y-1">
+                        <button onclick="selectTopic('basket')" id="btn-basket" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-basketball w-5 text-amber-600"></i> Bola Basket</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                        <button onclick="selectTopic('sepakbola')" id="btn-sepakbola" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-futbol w-5 text-emerald-600"></i> Sepak Bola</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                        <button onclick="selectTopic('bolavoli')" id="btn-bolavoli" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-volleyball w-5 text-blue-500"></i> Bola Voli</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Group 2: Bola Kecil -->
+                <div>
+                    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">Permainan Bola Kecil</span>
+                    <div class="mt-1 space-y-1">
+                        <button onclick="selectTopic('bulutangkis')" id="btn-bulutangkis" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-table-tennis-paddle-ball w-5 text-indigo-500"></i> Bulu Tangkis</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                        <button onclick="selectTopic('kasti')" id="btn-kasti" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-baseball w-5 text-red-500"></i> Kasti</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Group 3: Atletik -->
+                <div>
+                    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">Atletik</span>
+                    <div class="mt-1 space-y-1">
+                        <button onclick="selectTopic('jalancepat')" id="btn-jalancepat" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-person-walking w-5 text-teal-600"></i> Jalan Cepat</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                        <button onclick="selectTopic('laripendek')" id="btn-laripendek" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-person-running w-5 text-orange-600"></i> Lari Jarak Pendek</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                        <button onclick="selectTopic('lompatjauh')" id="btn-lompatjauh" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-child-reaching w-5 text-yellow-600"></i> Lompat Jauh</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Group 4: Kebugaran Jasmani -->
+                <div>
+                    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">Kebugaran</span>
+                    <div class="mt-1 space-y-1">
+                        <button onclick="selectTopic('kebugaran')" id="btn-kebugaran" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-dumbbell w-5 text-purple-600"></i> Kebugaran Jasmani</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Group 5: Senam Lantai & Ritmik -->
+                <div>
+                    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">Senam</span>
+                    <div class="mt-1 space-y-1">
+                        <button onclick="selectTopic('senamlantai')" id="btn-senamlantai" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-mat-alt w-5 text-rose-600"></i> Senam Lantai</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                        <button onclick="selectTopic('senamritmik')" id="btn-senamritmik" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-music w-5 text-pink-600"></i> Aktivitas Ritmik</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Group 6: Kesehatan -->
+                <div>
+                    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">Kesehatan</span>
+                    <div class="mt-1 space-y-1">
+                        <button onclick="selectTopic('kesehatan')" id="btn-kesehatan" class="materi-btn w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover:bg-slate-100 text-slate-700 transition">
+                            <span><i class="fa-solid fa-heart-pulse w-5 text-red-600"></i> Kesehatan Diri</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Column -->
+        <main class="lg:col-span-3 flex flex-col space-y-5">
+
+            <!-- School & Assessment Metadata Config -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm">
+                    <div>
+                        <label class="block text-slate-500 font-semibold mb-1">Nama Sekolah</label>
+                        <input type="text" id="schoolName" value="SMPN 32 Bandung" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold mb-1">Kelas / Semester</label>
+                        <select id="classInfo" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+                            <option value="7A">7A / Ganjil</option>
+                            <option value="7B">7B / Ganjil</option>
+                            <option value="7C">7C / Ganjil</option>
+                            <option value="7D">7D / Ganjil</option>
+                            <option value="7E">7E / Ganjil</option>
+                            <option value="7F">7F / Ganjil</option>
+                            <option value="7G">7G / Ganjil</option>
+                            <option value="7H">7H / Ganjil</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold mb-1">Guru Pengampu</label>
+                        <input type="text" id="teacherName" value="Hilman Fadillah, S.Pd." class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Assessment Topic Banner & Stats -->
+            <div class="bg-gradient-to-r from-emerald-800 to-emerald-900 rounded-xl p-5 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center space-x-2 bg-emerald-700/60 text-emerald-200 px-3 py-1 rounded-full text-xs mb-2">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span id="topicCategory">Permainan Bola Besar</span>
+                    </div>
+                    <h2 class="text-2xl font-bold" id="topicTitle">Bola Basket</h2>
+                    <p class="text-xs text-emerald-200 mt-1" id="topicDescription">
+                        Penilaian keterampilan dan pengetahuan gerak dasar permainan bola basket.
+                    </p>
+                </div>
+
+                <!-- Quick Stats Cards -->
+                <div class="flex items-center space-x-3 text-center">
+                    <div class="bg-white/10 backdrop-blur border border-white/10 rounded-lg p-2.5 min-w-[80px]">
+                        <div class="text-xs text-emerald-200">Siswa</div>
+                        <div class="text-lg font-bold">34</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur border border-white/10 rounded-lg p-2.5 min-w-[80px]">
+                        <div class="text-xs text-emerald-200">Rata-Rata</div>
+                        <div class="text-lg font-bold text-yellow-300" id="classAverageStat">0</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur border border-white/10 rounded-lg p-2.5 min-w-[80px]">
+                        <div class="text-xs text-emerald-200">Ketuntasan</div>
+                        <div class="text-lg font-bold text-emerald-300" id="classPassStat">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Bar: Table controls (Add Aspect, KKTP settings, Clear) -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 no-print">
+                <div class="flex items-center space-x-2">
+                    <button onclick="addNewColumnModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center space-x-2 transition shadow-sm">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Tambah Kolom Penilaian</span>
+                    </button>
+                    <button onclick="resetCurrentScores()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center space-x-1.5 transition">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>Reset Nilai</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center space-x-2 text-xs sm:text-sm">
+                    <span class="text-slate-500 font-medium">KKTP / KKM:</span>
+                    <input type="number" id="kktpInput" value="75" min="0" max="100" onchange="updateKKTP(this.value)" class="w-16 px-2 py-1 border border-slate-300 rounded text-center font-bold text-emerald-800">
+                </div>
+            </div>
+
+            <!-- Main Interactive Table Container -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto max-h-[550px] relative">
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse table-sticky-header">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200" id="tableHeaderRow">
+                                <th class="p-3 text-center w-12 bg-slate-100">No</th>
+                                <th class="p-3 w-56 bg-slate-100 min-w-[180px]">Nama Siswa</th>
+                                <!-- Dynamic Aspect Header Columns injected here -->
+                                <!-- Dynamic standard summary columns -->
+                                <th class="p-3 text-center bg-slate-100 w-24">Rata-Rata</th>
+                                <th class="p-3 text-center bg-slate-100 w-24">Predikat</th>
+                                <th class="p-3 text-center bg-slate-100 w-28">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-200 text-slate-700">
+                            <!-- 34 Student Rows generated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table Footer Legend / Information -->
+            <div class="bg-white rounded-xl p-4 border border-slate-200 text-xs text-slate-500 space-y-1">
+                <div class="font-semibold text-slate-700 mb-1"><i class="fa-solid fa-circle-info text-emerald-600 me-1"></i> Petunjuk Pengisian:</div>
+                <ul class="list-disc list-inside space-y-0.5">
+                    <li>Klik pada <strong class="text-slate-700">Judul Kolom Penilaian</strong> untuk mengubah nama atau menghapus aspek penilaian.</li>
+                    <li>Klik pada <strong class="text-slate-700">Nama Siswa</strong> untuk mengedit nama secara langsung.</li>
+                    <li>Isikan nilai angka (0 - 100) pada kolom penilaian. Rata-rata dan status ketuntasan dihitung otomatis.</li>
+                </ul>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal: Add Column Dialog -->
+    <div id="addColumnModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="text-base font-bold text-slate-800">Tambah Aspek Penilaian</h3>
+                <button onclick="closeModal('addColumnModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Aspek Penilaian</label>
+                <input type="text" id="newColumnTitleInput" placeholder="Contoh: Passing, Shooting, Postur, dll." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('addColumnModal')" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>
+                <button onclick="saveNewColumn()" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg">Tambah</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Edit / Delete Column Dialog -->
+    <div id="editColumnModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="text-base font-bold text-slate-800">Kelola Kolom Penilaian</h3>
+                <button onclick="closeModal('editColumnModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="hidden" id="editColumnIndex">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Ubah Judul Aspek</label>
+                <input type="text" id="editColumnTitleInput" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="deleteCurrentColumn()" class="px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg flex items-center space-x-1">
+                    <i class="fa-regular fa-trash-can"></i>
+                    <span>Hapus Kolom</span>
+                </button>
+                <div class="flex space-x-2">
+                    <button onclick="closeModal('editColumnModal')" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>
+                    <button onclick="saveColumnEdit()" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Element -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg text-xs font-medium transform transition-all duration-300 translate-y-20 opacity-0 z-50 flex items-center space-x-2">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMessage">Data berhasil disimpan</span>
+    </div>
+
+    <script>
+        // Default 34 Indonesian Students Names Preset
+        const DEFAULT_STUDENTS = [
+            "Ahmad Fauzi", "Anisa Rahmawati", "Bagus Setiawan", "Bayu Pratama", "Citra Kirana",
+            "Daffa Ramadhan", "Dewi Lestari", "Dimas Anggara", "Eka Putri", "Fajar Nugraha",
+            "Farhan Abbas", "Gita Gutawa", "Hendra Wijaya", "Indah Permata", "Irfan Hakim",
+            "Joko Susilo", "Kania Dewi", "Laksamana Putra", "M. Rizky Pratama", "Nadia Safira",
+            "Naufal Abiyyu", "Nurul Aini", "Okta Ramadhani", "Putri Ayu", "Radian Syah",
+            "Rahmat Hidayat", "Rian Ardianto", "Siti Nurhaliza", "Syaiful Bahri", "Tri Utami",
+            "Wahyu Hidayat", "Yulia Fitri", "Zahra Salsabila", "Zidan Iqbal"
+        ];
+
+        // Master preset configuration for PJOK Materials
+        const MATERI_CONFIG = {
+            basket: {
+                category: "Permainan Bola Besar",
+                title: "Bola Basket",
+                desc: "Teknik dasar melempar, menangkap, menggiring, dan menembak bola ke ring.",
+                defaultColumns: ["Chest Pass", "Bounce Pass", "Dribbling", "Shooting"]
+            },
+            sepakbola: {
+                category: "Permainan Bola Besar",
+                title: "Sepak Bola",
+                desc: "Teknik dasar menendang, menghentikan, menggiring, dan menyundul bola.",
+                defaultColumns: ["Menendang", "Menghentikan", "Menggiring", "Menyundul"]
+            },
+            bolavoli: {
+                category: "Permainan Bola Besar",
+                title: "Bola Voli",
+                desc: "Teknik dasar passing bawah, passing atas, servis bawah, dan servis atas.",
+                defaultColumns: ["Passing Bawah", "Passing Atas", "Servis Bawah", "Servis Atas"]
+            },
+            bulutangkis: {
+                category: "Permainan Bola Kecil",
+                title: "Bulu Tangkis",
+                desc: "Pegangan raket, posisi berdiri (stance), footwork, servis, lob, dan smash.",
+                defaultColumns: ["Pegangan Raket", "Footwork", "Servis", "Lob / Smash"]
+            },
+            kasti: {
+                category: "Permainan Bola Kecil",
+                title: "Kasti / Rounders",
+                desc: "Teknik melempar, menangkap, memukul bola, dan berlari menuju base.",
+                defaultColumns: ["Melempar Bola", "Menangkap Bola", "Memukul Bola", "Lari Base"]
+            },
+            jalancepat: {
+                category: "Atletik",
+                title: "Jalan Cepat",
+                desc: "Teknik start, posisi tubuh saat melangkah, dan memasuki garis finish.",
+                defaultColumns: ["Teknik Start", "Postur Langkah", "Ketepatan Gerak", "Finish"]
+            },
+            laripendek: {
+                category: "Atletik",
+                title: "Lari Jarak Pendek (Sprint)",
+                desc: "Start jongkok (crouch start), teknik berlari, dan teknik melewati garis finish.",
+                defaultColumns: ["Start Jongkok", "Teknik Lari", "Kecepatan", "Garis Finish"]
+            },
+            lompatjauh: {
+                category: "Atletik",
+                title: "Lompat Jauh",
+                desc: "Awalan, tolakan, sikap di udara, dan teknik mendarat di bak pasir.",
+                defaultColumns: ["Awalan", "Tolakan", "Sikap di Udara", "Mendarat"]
+            },
+            kebugaran: {
+                category: "Kebugaran Jasmani",
+                title: "Kebugaran Jasmani",
+                desc: "Komponen kebugaran: daya tahan, kekuatan, kelentukan, dan kecepatan.",
+                defaultColumns: ["Daya Tahan", "Kekuatan (Push/Sit Up)", "Kelentukan", "Kecepatan"]
+            },
+            senamlantai: {
+                category: "Senam",
+                title: "Senam Lantai",
+                desc: "Rangkaian gerak spesifik: guling depan, guling belakang, sikap lilin, dan kayang.",
+                defaultColumns: ["Guling Depan", "Guling Belakang", "Sikap Lilin", "Kayang"]
+            },
+            senamritmik: {
+                category: "Senam",
+                title: "Aktivitas Gerak Berirama",
+                desc: "Langkah kaki, ayunan lengan, dan variasi kombinasi gerak dengan irama/musik.",
+                defaultColumns: ["Langkah Kaki", "Ayunan Lengan", "Variasi Kombinasi", "Keserasian Irama"]
+            },
+            kesehatan: {
+                category: "Kesehatan Diri & Masyarakat",
+                title: "Pemeliharaan Kesehatan Diri",
+                desc: "Pola makan sehat bergizi seimbang, perkembangan tubuh remaja, & pencegahan penyakit.",
+                defaultColumns: ["Gizi Seimbang", "Pubertas Remaja", "Pencegahan Penyakit"]
+            }
+        };
+
+        // Global Application State
+        let currentTopicKey = 'basket';
+        let kktp = 75;
+        let studentList = [];
+        let topicData = {}; // Stores columns and scores per topic key
+
+        // Initialize App on DOM Load
+        window.onload = function() {
+            loadStateFromLocalStorage();
+            const tableBody = document.getElementById('tableBody');
+            tableBody.addEventListener('paste', handleStudentNamePaste);
+            selectTopic(currentTopicKey);
+        };
+
+        function parsePastedStudentNames(rawText) {
+            if (!rawText) return [];
+
+            const rows = rawText.split(/\r?\n/);
+            const names = [];
+
+            rows.forEach(row => {
+                const cells = row.split(/\t|;|\||,\s*|\s{2,}/);
+                cells.forEach(cell => {
+                    const cleaned = (cell || '').replace(/^"|"$/g, '').trim();
+                    if (cleaned) {
+                        names.push(cleaned);
+                    }
+                });
+            });
+
+            return names.filter(name => name && !/^\d+$/.test(name));
+        }
+
+        function handleStudentNamePaste(event) {
+            const target = event.target;
+            if (!target || !target.classList.contains('student-name-input')) {
+                return;
+            }
+
+            const clipboardText = event.clipboardData && event.clipboardData.getData
+                ? event.clipboardData.getData('text/plain')
+                : '';
+
+            if (!clipboardText) {
+                return;
+            }
+
+            const pastedNames = parsePastedStudentNames(clipboardText);
+            if (pastedNames.length === 0) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const startIndex = Number(target.dataset.studentIndex);
+            const namesToFill = pastedNames.slice(0, studentList.length - startIndex);
+
+            if (!namesToFill.length) {
+                return;
+            }
+
+            namesToFill.forEach((name, offset) => {
+                const listIndex = startIndex + offset;
+                if (listIndex < studentList.length) {
+                    studentList[listIndex].name = name;
+                }
+            });
+
+            saveStateToLocalStorage();
+            renderTable();
+            showToast(`Nama siswa otomatis diisi ${namesToFill.length} baris`);
+        }
+
+        // Load persisted data or build defaults
+        function loadStateFromLocalStorage() {
+            const savedKKTP = localStorage.getItem('pjok_kktp');
+            if (savedKKTP) kktp = parseInt(savedKKTP);
+            document.getElementById('kktpInput').value = kktp;
+
+            const savedTeacherName = localStorage.getItem('pjok_teacher_name');
+            const teacherNameInput = document.getElementById('teacherName');
+            if (savedTeacherName && teacherNameInput) {
+                teacherNameInput.value = savedTeacherName;
+            } else if (teacherNameInput) {
+                teacherNameInput.value = 'Hilman Fadillah, S.Pd.';
+            }
+
+            const savedSchoolName = localStorage.getItem('pjok_school_name');
+            const schoolNameInput = document.getElementById('schoolName');
+            if (savedSchoolName && schoolNameInput) {
+                schoolNameInput.value = savedSchoolName;
+            } else if (schoolNameInput) {
+                schoolNameInput.value = 'SMPN 32 Bandung';
+            }
+
+            const savedClass = localStorage.getItem('pjok_class_info');
+            const classSelect = document.getElementById('classInfo');
+            if (savedClass && classSelect) {
+                classSelect.value = savedClass;
+            } else if (classSelect) {
+                classSelect.value = '7A';
+            }
+
+            const savedStudents = localStorage.getItem('pjok_students');
+            if (savedStudents) {
+                studentList = JSON.parse(savedStudents);
+            } else {
+                studentList = DEFAULT_STUDENTS.map((name, idx) => ({ id: idx + 1, name: name }));
+            }
+
+            const savedTopicData = localStorage.getItem('pjok_topic_data');
+            if (savedTopicData) {
+                topicData = JSON.parse(savedTopicData);
+            }
+        }
+
+        function saveStateToLocalStorage() {
+            localStorage.setItem('pjok_kktp', kktp);
+            localStorage.setItem('pjok_teacher_name', document.getElementById('teacherName').value || 'Hilman Fadillah, S.Pd.');
+            localStorage.setItem('pjok_school_name', document.getElementById('schoolName').value || 'SMPN 32 Bandung');
+            localStorage.setItem('pjok_class_info', document.getElementById('classInfo').value);
+            localStorage.setItem('pjok_students', JSON.stringify(studentList));
+            localStorage.setItem('pjok_topic_data', JSON.stringify(topicData));
+            showToast("Data tersimpan otomatis");
+        }
+
+        // Switch Assessment Material / Topic
+        function selectTopic(key) {
+            currentTopicKey = key;
+            const config = MATERI_CONFIG[key];
+
+            // Update UI Sidebar highlight
+            document.querySelectorAll('.materi-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-100', 'text-emerald-800', 'font-semibold', 'border-l-4', 'border-emerald-600');
+            });
+            const activeBtn = document.getElementById(`btn-${key}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-emerald-100', 'text-emerald-800', 'font-semibold', 'border-l-4', 'border-emerald-600');
+            }
+
+            // Update Topic Information Headers
+            document.getElementById('topicCategory').textContent = config.category;
+            document.getElementById('topicTitle').textContent = config.title;
+            document.getElementById('topicDescription').textContent = config.desc;
+
+            // Ensure topic entry exists in state
+            if (!topicData[key]) {
+                topicData[key] = {
+                    columns: [...config.defaultColumns],
+                    scores: {} // { studentId: { colIndex: score } }
+                };
+            }
+
+            renderTable();
+        }
+
+        // Render Table Headers and Body
+        function renderTable() {
+            const topic = topicData[currentTopicKey];
+            const headerRow = document.getElementById('tableHeaderRow');
+            const body = document.getElementById('tableBody');
+
+            // 1. Build Table Headers
+            let headerHTML = `
+                <th class="p-3 text-center w-12 bg-slate-100">No</th>
+                <th class="p-3 w-56 bg-slate-100 min-w-[180px]">Nama Siswa</th>
+            `;
+
+            topic.columns.forEach((colName, index) => {
+                headerHTML += `
+                    <th onclick="openEditColumnModal(${index})" class="p-3 bg-slate-100 text-center cursor-pointer hover:bg-slate-200 transition group border-l border-slate-200 min-w-[120px]">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span class="font-semibold text-slate-700">${colName}</span>
+                            <i class="fa-solid fa-pen-to-square text-slate-400 group-hover:text-emerald-600 text-xs"></i>
+                        </div>
+                    </th>
+                `;
+            });
+
+            headerHTML += `
+                <th class="p-3 text-center bg-slate-100 w-24 border-l border-slate-200">Rata-Rata</th>
+                <th class="p-3 text-center bg-slate-100 w-24">Predikat</th>
+                <th class="p-3 text-center bg-slate-100 w-28">Status</th>
+            `;
+            headerRow.innerHTML = headerHTML;
+
+            // 2. Build Table Rows for 34 Students
+            let bodyHTML = '';
+            let totalClassSum = 0;
+            let totalEvaluated = 0;
+            let totalPassed = 0;
+
+            studentList.forEach((student, sIdx) => {
+                const studentScores = (topic.scores[student.id]) ? topic.scores[student.id] : {};
+                
+                // Calculate average score for student
+                let sum = 0;
+                let validCount = 0;
+                topic.columns.forEach((_, cIdx) => {
+                    const scoreVal = studentScores[cIdx];
+                    if (scoreVal !== undefined && scoreVal !== '' && !isNaN(scoreVal)) {
+                        sum += parseFloat(scoreVal);
+                        validCount++;
+                    }
+                });
+
+                const avg = validCount > 0 ? (sum / validCount) : 0;
+                const formattedAvg = validCount > 0 ? avg.toFixed(1) : '-';
+
+                if (validCount > 0) {
+                    totalClassSum += avg;
+                    totalEvaluated++;
+                    if (avg >= kktp) totalPassed++;
+                }
+
+                // Determine Predicate & Status Tag
+                let predicate = '-';
+                let statusBadge = `<span class="text-slate-400 text-xs">-</span>`;
+
+                if (validCount > 0) {
+                    if (avg >= 90) predicate = 'A';
+                    else if (avg >= 80) predicate = 'B';
+                    else if (avg >= 70) predicate = 'C';
+                    else predicate = 'D';
+
+                    if (avg >= kktp) {
+                        statusBadge = `<span class="bg-emerald-100 text-emerald-800 font-semibold text-xs px-2.5 py-0.5 rounded-full inline-block">Tuntas</span>`;
+                    } else {
+                        statusBadge = `<span class="bg-rose-100 text-rose-800 font-semibold text-xs px-2.5 py-0.5 rounded-full inline-block">Belum Tuntas</span>`;
+                    }
+                }
+
+                bodyHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-2 text-center text-slate-500 font-medium">${sIdx + 1}</td>
+                        <td class="p-2">
+                            <input type="text" value="${student.name}" data-student-id="${student.id}" data-student-index="${sIdx}" onchange="updateStudentName(${student.id}, this.value)" 
+                                class="student-name-input w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-emerald-500 rounded focus:bg-white focus:outline-none font-medium text-slate-800">
+                        </td>
+                `;
+
+                // Score inputs for each dynamic aspect column
+                topic.columns.forEach((_, cIdx) => {
+                    const scoreVal = studentScores[cIdx] !== undefined ? studentScores[cIdx] : '';
+                    bodyHTML += `
+                        <td class="p-2 text-center border-l border-slate-100">
+                            <input type="number" min="0" max="100" value="${scoreVal}" placeholder="0"
+                                onchange="updateScore(${student.id}, ${cIdx}, this.value)"
+                                class="w-16 px-1 py-1 text-center border border-slate-200 rounded focus:ring-2 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-700">
+                        </td>
+                    `;
+                });
+
+                bodyHTML += `
+                        <td class="p-2 text-center font-bold text-slate-800 border-l border-slate-200">${formattedAvg}</td>
+                        <td class="p-2 text-center font-semibold text-slate-600">${predicate}</td>
+                        <td class="p-2 text-center">${statusBadge}</td>
+                    </tr>
+                `;
+            });
+
+            body.innerHTML = bodyHTML;
+
+            // 3. Update Summary Class Statistics
+            const classAverage = totalEvaluated > 0 ? (totalClassSum / totalEvaluated).toFixed(1) : 0;
+            const passPercentage = totalEvaluated > 0 ? Math.round((totalPassed / totalEvaluated) * 100) : 0;
+
+            document.getElementById('classAverageStat').textContent = classAverage;
+            document.getElementById('classPassStat').textContent = passPercentage + '%';
+        }
+
+        // Student Data & Score Mutation Functions
+        function updateStudentName(id, newName) {
+            const student = studentList.find(s => s.id === id);
+            if (student) {
+                student.name = newName || `Siswa ${id}`;
+                saveStateToLocalStorage();
+            }
+        }
+
+        function updateScore(studentId, columnIndex, value) {
+            const topic = topicData[currentTopicKey];
+            if (!topic.scores[studentId]) {
+                topic.scores[studentId] = {};
+            }
+
+            if (value === '' || isNaN(value)) {
+                delete topic.scores[studentId][columnIndex];
+            } else {
+                let num = parseFloat(value);
+                if (num > 100) num = 100;
+                if (num < 0) num = 0;
+                topic.scores[studentId][columnIndex] = num;
+            }
+
+            saveStateToLocalStorage();
+            renderTable();
+        }
+
+        function updateKKTP(val) {
+            kktp = parseInt(val) || 75;
+            saveStateToLocalStorage();
+            renderTable();
+        }
+
+        function resetCurrentScores() {
+            if (topicData[currentTopicKey]) {
+                topicData[currentTopicKey].scores = {};
+                saveStateToLocalStorage();
+                renderTable();
+                showToast("Nilai materi ini telah direset");
+            }
+        }
+
+        // Dynamic Column Operations (Add, Edit, Remove)
+        function addNewColumnModal() {
+            document.getElementById('newColumnTitleInput').value = '';
+            document.getElementById('addColumnModal').classList.remove('hidden');
+            document.getElementById('addColumnModal').classList.add('flex');
+            document.getElementById('newColumnTitleInput').focus();
+        }
+
+        function saveNewColumn() {
+            const title = document.getElementById('newColumnTitleInput').value.trim();
+            if (title) {
+                topicData[currentTopicKey].columns.push(title);
+                saveStateToLocalStorage();
+                renderTable();
+                closeModal('addColumnModal');
+                showToast(`Kolom "${title}" berhasil ditambahkan`);
+            }
+        }
+
+        function openEditColumnModal(colIdx) {
+            document.getElementById('editColumnIndex').value = colIdx;
+            document.getElementById('editColumnTitleInput').value = topicData[currentTopicKey].columns[colIdx];
+            document.getElementById('editColumnModal').classList.remove('hidden');
+            document.getElementById('editColumnModal').classList.add('flex');
+        }
+
+        function saveColumnEdit() {
+            const colIdx = parseInt(document.getElementById('editColumnIndex').value);
+            const newTitle = document.getElementById('editColumnTitleInput').value.trim();
+            if (newTitle && !isNaN(colIdx)) {
+                topicData[currentTopicKey].columns[colIdx] = newTitle;
+                saveStateToLocalStorage();
+                renderTable();
+                closeModal('editColumnModal');
+                showToast("Judul kolom diperbarui");
+            }
+        }
+
+        function deleteCurrentColumn() {
+            const colIdx = parseInt(document.getElementById('editColumnIndex').value);
+            if (!isNaN(colIdx)) {
+                const topic = topicData[currentTopicKey];
+                topic.columns.splice(colIdx, 1);
+
+                // Adjust score objects for shifted column indices
+                Object.keys(topic.scores).forEach(sId => {
+                    const studentScores = topic.scores[sId];
+                    const newScores = {};
+                    Object.keys(studentScores).forEach(cKey => {
+                        const cIdx = parseInt(cKey);
+                        if (cIdx < colIdx) {
+                            newScores[cIdx] = studentScores[cIdx];
+                        } else if (cIdx > colIdx) {
+                            newScores[cIdx - 1] = studentScores[cIdx];
+                        }
+                    });
+                    topic.scores[sId] = newScores;
+                });
+
+                saveStateToLocalStorage();
+                renderTable();
+                closeModal('editColumnModal');
+                showToast("Kolom berhasil dihapus");
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById(modalId).classList.remove('flex');
+        }
+
+        // Export Table to Microsoft Excel (.xlsx)
+        function exportToExcel() {
+            const config = MATERI_CONFIG[currentTopicKey];
+            const topic = topicData[currentTopicKey];
+
+            const school = document.getElementById('schoolName').value;
+            const classInfo = document.getElementById('classInfo').value;
+            const teacher = document.getElementById('teacherName').value;
+
+            // Prepare excel array data
+            const excelRows = [
+                ["REKAPITULASI PENILAIAN PJOK KELAS 7"],
+                [`Materi: ${config.title} (${config.category})`],
+                [`Sekolah: ${school}`, "", `Kelas/Sem: ${classInfo}`],
+                [`Guru Pengampu: ${teacher}`, "", `KKTP: ${kktp}`],
+                [] // Empty spacing row
+            ];
+
+            // Table Header row
+            const headerRow = ["No", "Nama Siswa"];
+            topic.columns.forEach(col => headerRow.push(col));
+            headerRow.push("Nilai Akhir", "Predikat", "Keterangan Ketuntasan");
+            excelRows.push(headerRow);
+
+            // Table Student Rows
+            studentList.forEach((student, index) => {
+                const studentScores = topic.scores[student.id] || {};
+                const row = [index + 1, student.name];
+
+                let sum = 0;
+                let validCount = 0;
+                topic.columns.forEach((_, cIdx) => {
+                    const score = studentScores[cIdx];
+                    if (score !== undefined && score !== '' && !isNaN(score)) {
+                        row.push(parseFloat(score));
+                        sum += parseFloat(score);
+                        validCount++;
+                    } else {
+                        row.push("");
+                    }
+                });
+
+                const avg = validCount > 0 ? parseFloat((sum / validCount).toFixed(1)) : "";
+                let predicate = "";
+                let status = "";
+
+                if (avg !== "") {
+                    if (avg >= 90) predicate = "A";
+                    else if (avg >= 80) predicate = "B";
+                    else if (avg >= 70) predicate = "C";
+                    else predicate = "D";
+
+                    status = avg >= kktp ? "TUNTAS" : "BELUM TUNTAS";
+                }
+
+                row.push(avg, predicate, status);
+                excelRows.push(row);
+            });
+
+            // Convert to sheet
+            const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
+
+            // Set dynamic column widths for better formatting
+            const colWidths = [{ wch: 5 }, { wch: 25 }];
+            topic.columns.forEach(() => colWidths.push({ wch: 15 }));
+            colWidths.push({ wch: 12 }, { wch: 10 }, { wch: 18 });
+            worksheet['!cols'] = colWidths;
+
+            // Create workbook & write file
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Penilaian PJOK");
+
+            const safeFilename = `Penilaian_PJOK_Kelas7_${config.title.replace(/[^a-zA-Z0-0]/g, "_")}.xlsx`;
+            XLSX.writeFile(workbook, safeFilename);
+
+            showToast("File Excel berhasil diunduh!");
+        }
+
+        // Feedback Toast UI helper
+        function showToast(message) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
